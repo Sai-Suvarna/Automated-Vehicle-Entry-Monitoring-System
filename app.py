@@ -12,6 +12,18 @@ import subprocess
 import shutil
 from fastapi.responses import RedirectResponse
 import easyocr
+import psycopg2
+
+
+conn = psycopg2.connect(
+    dbname="sampledb",
+    user="app",
+    password="pOud4unh16k5Xp9b1HE754U2",
+    host="absolutely-verified-stag.a1.pgedge.io",
+    port="5432"
+)
+
+
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -37,6 +49,20 @@ def login(request: Request):
 @app.get('/sign')
 def sign(request: Request):
     return templates.TemplateResponse("signup.html", {"request": request})
+
+@app.post("/sign")
+async def signup(
+    request: Request, username: str = Form(...), email: str = Form(...),password: str = Form(...),licence:str = Form(...) 
+):
+   
+    cur = conn.cursor()
+    cur.execute("INSERT INTO userdb (name,email,password,licence) VALUES (%s, %s,%s, %s)", (username,email,password,licence))
+    conn.commit()
+    cur.close() 
+ 
+    return RedirectResponse("/", status_code=303)
+
+
 
 
 @app.post("/login")
@@ -184,5 +210,5 @@ def run_detection(source_image, weights_path,det_path,imgname):
 
 
     
-if __name__ == '__main__':
+if _name_ == '_main_':
     uvicorn.run(app, host='0.0.0.0', port=8000)
