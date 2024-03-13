@@ -93,16 +93,32 @@ async def upload_image( request: Request,image_file: UploadFile = File(...)):
     words = extracted_text.split()
     modified_text=''
     if len(words) >= 2:
-        modified_text = ' '.join(words[2:])
+        modified_text = ''.join(words[2:])
         
 
+    store_text_in_database(modified_text)
+    
+    van = " "
+    if (check_license_existence(modified_text) == 1):
+        van="Is a Native"
+    else:
+        van="Is a Guest"
         
     context = {
         "request": request,
+        "van": van,
         "extracted_text":modified_text
     }
 
     return templates.TemplateResponse("result.html", context)
+
+def store_text_in_database(text):
+    cur = conn.cursor()
+    cur.execute("INSERT INTO detectedtext (licenceplatenumer) VALUES (%s)", (text,))
+    conn.commit()
+    cur.close()
+
+
 
 def extract_text_from_red_box(image_path):
         
@@ -151,9 +167,6 @@ def extract_text_from_red_box(image_path):
 
         else:
             return "No red bounding box found"
-
-
-
 
 
 
@@ -207,6 +220,32 @@ def run_detection(source_image, weights_path,det_path,imgname):
 
     # Move the new file to the destination folder
     shutil.move(f"{latest_exp_folder}/{output_file}", destination_folder)
+
+
+def check_license_existence(license_plate_number):
+    try:
+        # Create a cursor object
+        cur = conn.cursor()
+
+        # Execute the SQL query to check license existence
+        cur.execute("SELECT COUNT(*) FROM userdb WHERE licence = %s", (license_plate_number,))
+
+        # Fetch the result
+        result = cur.fetchone()
+
+        # Close the cursor
+        cur.close()
+
+        # Check if the count is greater than 0
+        if result[0] > 0:
+            # print("Yes")
+            return 1
+        else:
+            # print("No")
+            return 0
+
+    except psycopg2.Error as e:
+        print("Error occurred while checking license existence:", e)
 
 
     
