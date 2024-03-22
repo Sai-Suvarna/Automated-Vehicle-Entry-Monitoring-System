@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Recommendation System</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+</head>
+
+<body>
+    <div id="title-container">
+        <h3 style="margin-left: 400px; margin-right: 200px; margin-top: 2px;">Music Recommendation System</h3>
+        <h4 style="margin-right: 5px; font-size: 20px; margin-top: 5px; color: black;">Filter </h4>
+        <input type="checkbox" id="filter" checked data-toggle="toggle" data-on="On" data-off="Off" data-onstyle="primary">
+        <button type="button" id="instructions" class="btn btn-primary" data-toggle="modal" data-target="#help">
+            Help
+        </button> 
+         
+    </div>
+
+    <div id="content-container">
+        <div id="left">
+            <p id="status-text"></p>
+            <video id="web-cam-container" style="display: none;"></video>
+
+            <div class="button-container">
+                <button id="start-camera">Start Camera</button>
+                <button id="start-recording" disabled>Start Recording</button>
+                <button id="stop-recording" disabled>Stop Recording</button>
+            </div>
+
+            <div class="result-container" id="result-container">
+                <img id="face-image" style="display: none; margin-right: 10px;">
+                <div class="result-values">
+                    <span id="face-emotion-value" style="font-weight: bold;"></span>
+                    <span id="face-emotion-prob-value" style="font-weight: bold;"></span>
+                </div>
+
+                <img id="audio-image" style="display: none; margin-left: 100px; margin-right: 10px;">
+                <div class="result-values">
+                    <span id="speech-emotion-value" style="font-weight: bold;"></span>
+                    <span id="speech-emotion-prob-value" style="font-weight: bold;"></span>
+                </div>
+            </div>
+
+            <div class="result-values final-results">
+                <p id="final-emotion">Final Predicted Emotion: 
+                    <span id="final-emotion-value" style="font-weight: bold;"></span>
+                </p>
+                <p id="final-emotion-prob">Final Emotion Probability: <span id="final-emotion-prob-value" style="font-weight: bold;"></span></p>
+            </div>
+            
+            <div class="loader" style="display: none; margin-top: 30px;"></div>
+            <p id="processing-text" style="display: none; color: black;">Processing results...</p> 
+            
+            <button type="button" id="frames" style="display: none;" class="btn btn-primary" data-toggle="modal" data-target="#frame">
+                Display detected frames
+            </button>            
+        </div>
+
+        <div class="vl"></div>
+        
+        <div id="right">
+            <div id="filter-options">
+                <div id="filters">
+                    <div id="language">
+                        <p>Language</p>
+                        <select id="language-options">
+                            <option value="All">All</option>
+                            <option value="Telugu">Telugu</option>
+                            <option value="English">English</option>
+                            <option value="Hindi">Hindi</option>
+                        </select>
+                    </div>
+                    <div id="emotion">
+                        <p>Emotion</p>
+                        <select id="emotion-options">
+                            <option value="All">All</option>
+                            <option value="Happy">Happy</option>
+                            <option value="Sad">Sad</option>
+                            <option value="Angry">Angry</option>
+                            <option value="Surprise">Surprise</option>
+                            <option value="Neutral">Neutral</option>
+                            <option value="Disgust">Disgust</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="filter-buttons">
+                    <button id="submit">Filter</button>
+                </div>
+            </div>
+            
+            <div id="tracks" style="display: none;"></div>
+        </div>
+    </div>
+
+<!-- Help -->
+<div class="modal fade" id="help" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Detected Frames</h5>
+        </div>
+        <div class="modal-body">
+            <div id="suggestion">
+                <p>
+                    Welcome to the Music Recommendation System! Follow these steps to get personalized music suggestions:
+                </p>
+                <ol>
+                    <li>Click the <strong>"Start Camera"</strong> button to capture your video and audio.</li>
+                    <li>Once the camera is started, click <strong>"Start Recording"</strong> to begin the recording process.</li>
+                    <li>Perform any facial expressions or speak to capture your emotions.</li>
+                    <li>Click <strong>"Stop Recording"</strong> when you're done.</li>
+                    <li>Wait for the system to process the data and display your final emotion prediction.</li>
+                    <li>Your music suggestions will appear here based on your detected emotion.</li>
+                </ol>
+                <p>
+                    Note: Ensure your camera and microphone are enabled and functional for accurate emotion detection.
+                </p>
+                <hr>
+                <p>
+                    Additional Features:
+                </p>
+                <ul>
+                    <li>To view the detected frames, click the <strong>"Display detected frames"</strong> button.</li>
+                    <li>You can filter songs based on language and emotion by selecting options from the dropdown menus and clicking the <strong>"Filter"</strong> button.</li>
+                    <li>To toggle the filter options on or off, use the <strong>"Filter"</strong> toggle switch at the top.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>         
+
+  <!-- Detected Frames -->
+<div class="modal fade" id="frame" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Detected Frames</h5>
+        </div>
+        <div class="modal-body">
+            <div id="frames-container">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <script src="./static/live.js"></script>
+</body>
+
+</html>

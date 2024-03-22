@@ -50,6 +50,10 @@ def login(request: Request):
 def sign(request: Request):
     return templates.TemplateResponse("signup.html", {"request": request})
 
+@app.get('/live')
+def login(request: Request):
+    return templates.TemplateResponse("live.html", {"request": request})
+
 @app.post("/sign")
 async def signup(
     request: Request, username: str = Form(...), email: str = Form(...),password: str = Form(...),licence:str = Form(...) 
