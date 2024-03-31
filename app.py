@@ -31,13 +31,16 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# Global variable to hold the camera stream
+stream = None
+
 class ImageData(BaseModel):
     image: str
 
 # Define a route to receive the image data and save it
 @app.post("/submit_snapshot", response_class=HTMLResponse)
 async def save_snapshot(request: Request, image: UploadFile = File(...)):
-    # try:
+    try:
         # Define the path where you want to save the image
         static_folder = "static"  # Or any other folder where you want to save the images
         image_path = os.path.join(static_folder, image.filename)
@@ -50,8 +53,8 @@ async def save_snapshot(request: Request, image: UploadFile = File(...)):
         print("Image saved successfully at:", image_path) # Debugging
 
         predictions = process_image(image_path,image.filename)
-    
         image_path = "./static/snapshot.png"
+
         extracted_text = extract_text_from_red_box(image_path)
         print("/nExtracted Text from Red Box:", extracted_text)
         
@@ -60,7 +63,6 @@ async def save_snapshot(request: Request, image: UploadFile = File(...)):
         if len(words) >= 2:
             modified_text = ''.join(words[2:])
             
-
         store_text_in_database(modified_text)
         
         van = " "
@@ -76,12 +78,13 @@ async def save_snapshot(request: Request, image: UploadFile = File(...)):
             "extracted_text":modified_text
         }
 
-        return templates.TemplateResponse("result.html", context)
+       # return templates.TemplateResponse("result.html", context)
 
-    #     return JSONResponse(content={"message": "Image received and saved successfully"})
-    # except Exception as e:
-    #     print("Error saving image:", e) # Debugging
-    #     return JSONResponse(content={"error": "Failed to save image"}, status_code=500)
+        return JSONResponse(content={"message": "Image received and saved successfully"})
+    except Exception as e:
+        print("Error saving image:", e) # Debugging
+        return JSONResponse(content={"error": "Failed to save image"}, status_code=500)
+    
 
 
 
@@ -110,11 +113,19 @@ def sign(request: Request):
 def login(request: Request):
     return templates.TemplateResponse("live.html", {"request": request})
 
+
+# Define the route to render the result.html template
+@app.get("/result", response_class=HTMLResponse)
+async def show_result(request: Request):
+    # You can add any context data you want to pass to the template
+    context = {"request": request}
+    return templates.TemplateResponse("result.html", context)
+
 @app.post("/sign")
 async def signup(
     request: Request, username: str = Form(...), email: str = Form(...),password: str = Form(...),licence:str = Form(...) 
 ):
-   
+      
     cur = conn.cursor()
     cur.execute("INSERT INTO userdb (name,email,password,licence) VALUES (%s, %s,%s, %s)", (username,email,password,licence))
     conn.commit()
@@ -132,7 +143,7 @@ def login():
 async def upload_image( request: Request,image_file: UploadFile = File(...)):
     image_path = f"{UPLOAD_FOLDER}/{image_file.filename}"
     save_path = os.path.join(UPLOAD_FOLDER, image_file.filename)
-    stop_camera_stream()
+    
     with open(save_path, "wb") as image:
         content = await image_file.read()
         image.write(content)
@@ -158,21 +169,13 @@ async def upload_image( request: Request,image_file: UploadFile = File(...)):
         van="Is a Guest"
         
     context = {
-        "request": request
-        # "van": van,
-        # "extracted_text":modified_text
+        "request": request,
+        "van": van,
+        "extracted_text":modified_text
     }
 
     return templates.TemplateResponse("result.html", context)
 
-
-# Function to stop the camera stream
-def stop_camera_stream():
-    global stream  # Assuming 'stream' is a global variable holding the camera stream
-    if stream:
-        for track in stream.getTracks():
-            track.stop()
-        stream = None  # Set stream to None to indicate it has been stopped
 
 
 def store_text_in_database(text):

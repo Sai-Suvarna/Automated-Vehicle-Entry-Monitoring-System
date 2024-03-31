@@ -71,8 +71,8 @@
                 })
                 .then(data => {
                     console.log(data);
-                    // Turn off the camera stream
-                    stopCameraStream();
+                    // Redirect to the result page
+                    window.location.href = "/result";
                 })
                 .catch(error => {
                     console.error('Error:', error);
