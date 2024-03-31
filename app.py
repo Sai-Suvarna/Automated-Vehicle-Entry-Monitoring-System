@@ -3,6 +3,8 @@ from fastapi import FastAPI, Request, File, UploadFile,Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+from fastapi.responses import JSONResponse
 import cv2
 import pickle
 import numpy as np
@@ -28,6 +30,60 @@ conn = psycopg2.connect(
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+class ImageData(BaseModel):
+    image: str
+
+# Define a route to receive the image data and save it
+@app.post("/submit_snapshot", response_class=HTMLResponse)
+async def save_snapshot(request: Request, image: UploadFile = File(...)):
+    # try:
+        # Define the path where you want to save the image
+        static_folder = "static"  # Or any other folder where you want to save the images
+        image_path = os.path.join(static_folder, image.filename)
+        
+        # Save the image
+        with open(image_path, "wb") as f:
+            content = await image.read()
+            f.write(content)
+        
+        print("Image saved successfully at:", image_path) # Debugging
+
+        predictions = process_image(image_path,image.filename)
+    
+        image_path = "./static/snapshot.png"
+        extracted_text = extract_text_from_red_box(image_path)
+        print("/nExtracted Text from Red Box:", extracted_text)
+        
+        words = extracted_text.split()
+        modified_text=''
+        if len(words) >= 2:
+            modified_text = ''.join(words[2:])
+            
+
+        store_text_in_database(modified_text)
+        
+        van = " "
+        print(modified_text)
+        if (check_license_existence(modified_text) == 1):
+            van="Is a Native"
+        else:
+            van="Is a Guest"
+            
+        context = {
+            "request": request,
+            "van": van,
+            "extracted_text":modified_text
+        }
+
+        return templates.TemplateResponse("result.html", context)
+
+    #     return JSONResponse(content={"message": "Image received and saved successfully"})
+    # except Exception as e:
+    #     print("Error saving image:", e) # Debugging
+    #     return JSONResponse(content={"error": "Failed to save image"}, status_code=500)
+
+
 
 UPLOAD_FOLDER = "static"
 if not os.path.exists(UPLOAD_FOLDER):
@@ -67,23 +123,16 @@ async def signup(
     return RedirectResponse("/", status_code=303)
 
 
-
-
 @app.post("/login")
 def login():
     return RedirectResponse("/index", status_code=303)
-
-    
-
-
-
 
 
 @app.post("/upload_image", response_class=HTMLResponse)
 async def upload_image( request: Request,image_file: UploadFile = File(...)):
     image_path = f"{UPLOAD_FOLDER}/{image_file.filename}"
     save_path = os.path.join(UPLOAD_FOLDER, image_file.filename)
-    
+    stop_camera_stream()
     with open(save_path, "wb") as image:
         content = await image_file.read()
         image.write(content)
@@ -109,12 +158,22 @@ async def upload_image( request: Request,image_file: UploadFile = File(...)):
         van="Is a Guest"
         
     context = {
-        "request": request,
-        "van": van,
-        "extracted_text":modified_text
+        "request": request
+        # "van": van,
+        # "extracted_text":modified_text
     }
 
     return templates.TemplateResponse("result.html", context)
+
+
+# Function to stop the camera stream
+def stop_camera_stream():
+    global stream  # Assuming 'stream' is a global variable holding the camera stream
+    if stream:
+        for track in stream.getTracks():
+            track.stop()
+        stream = None  # Set stream to None to indicate it has been stopped
+
 
 def store_text_in_database(text):
     cur = conn.cursor()
